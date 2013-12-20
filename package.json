@@ -1,9 +1,9 @@
 {
-    "name": "nodeload-nmickuli",
-    "version": "1.0.2",
+    "name": "nodeload-11main",
+    "version": "1.0.3",
     "description": "Load testing library for node.js. Updated for node 0.6.x by nmickuli.",
     "keywords": ["testing", "load testing", "http"],
-    "homepage": "https://github.com/nmickuli/nodeload",
+    "homepage": "https://github.com/11main/nodeload",
     "engines": {
         "node": ">=0.4"
     },
@@ -15,11 +15,11 @@
         "Michael Mattozzi <mike.mattozzi@gmail.com>"
     ],
     "bugs": {
-        "url" : "https://github.com/nmickuli/nodeload/issues"
+        "url" : "https://github.com/11main/nodeload/issues"
     },
     "repository": {
         "type": "git",
-        "url": "http://github.com/nmickuli/nodeload"
+        "url": "http://github.com/11main/nodeload"
     },
     "main": "./nodeload.js",
     "bin": {
@@ -47,7 +47,7 @@
     "licenses": [
         {
             "type": "MIT",
-            "url": "https://github.com/nmickuli/nodeload/raw/master/LICENSE"
+            "url": "https://github.com/11main/nodeload/raw/master/LICENSE"
         }
     ]
 }
