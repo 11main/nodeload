@@ -21,9 +21,9 @@
         "type": "git",
         "url": "http://github.com/11main/nodeload"
     },
-    "main": "./nodeload.js",
+    "main": "./lib/loadtesting.js",
     "bin": {
-        "nodeload.js": "./nodeload.js",
+        "nodeload.js": "./lib/loadtesting.js",
         "nl.js": "./nl.js"
     },
     "directories": {
