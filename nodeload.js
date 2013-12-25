@@ -1031,6 +1031,8 @@ MultiLoop.prototype.start = function() {
     this.loops = [];
     this.loopConditions_ = [];
 
+    console.log("this.spec.numberOfTimes: " + this.spec.numberOfTimes.toString());
+
     if (this.spec.numberOfTimes > 0 && this.spec.numberOfTimes < Infinity) {
         this.loopConditions_.push(Loop.maxExecutions(this.spec.numberOfTimes));
     }
@@ -1342,7 +1344,7 @@ var LogFile = require('../stats').LogFile;
 
 /** StatsLogger writes interval stats from a Monitor or MonitorGroup to disk each time it emits 'update' */
 var StatsLogger = exports.StatsLogger = function StatsLogger(monitor, logNameOrObject) {
-    this.logNameOrObject = logNameOrObject || ('results-' + START.toISOString() + '-stats.log');
+    this.logNameOrObject = logNameOrObject || ('results-' + START.toISOString().replace(/:/g,"-") + '-stats.log');
     this.monitor = monitor;
     this.logger_ = this.log_.bind(this);
 };
@@ -1957,7 +1959,7 @@ Chart.prototype = {
 
 var ReportGroup = exports.ReportGroup = function() {
     this.reports = [];
-    this.logNameOrObject = 'results-' + START.toISOString() + '.html';
+    this.logNameOrObject = 'results-' + START.toISOString().replace(/:/g,"-") + '.html';
 };
 ReportGroup.prototype = {
     addReport: function(report) {
@@ -2237,6 +2239,7 @@ TEST_OPTIONS for a list of the configuration values in each specification.
         in .interval and .stats. See LoadTest below.
 */
 var run = exports.run = function(specs) {
+    console.log("Running NodeLoad -");
     specs = (specs instanceof Array) ? specs : util.argarray(arguments);
     var tests = specs.map(function(spec) {
         spec = util.defaults(spec, TEST_OPTIONS);
@@ -2244,6 +2247,7 @@ var run = exports.run = function(specs) {
                 if (spec.requestGenerator) { return spec.requestGenerator(client); }
                 var request = client.request(spec.method, spec.path, { 'host': spec.host });
                 if (spec.requestData) {
+                    console.log("Issuing request ");
                     request.write(spec.requestData);
                 }
                 return request;
@@ -2312,6 +2316,7 @@ var LoadTest = exports.LoadTest = function LoadTest(tests) {
     self.interval = {};
     self.stats = {};
     self.tests.forEach(function(test) {
+        console.log("Setting intervals ");
         self.interval[test.spec.name] = test.monitor.interval;
         self.stats[test.spec.name] = test.monitor.stats;
     });
