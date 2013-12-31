@@ -850,7 +850,7 @@ and 'enditeration'.
 var Loop = exports.Loop = function Loop(funOrSpec, args, conditions, rps) {
     EventEmitter.call(this);
 
-//    console.log("create loop ");
+    console.log("create loop ");
 
     if (typeof funOrSpec === 'object') {
         var spec = util.defaults(funOrSpec, LOOP_OPTIONS);
@@ -875,6 +875,7 @@ var Loop = exports.Loop = function Loop(funOrSpec, args, conditions, rps) {
     this.__defineGetter__('rps', function() { return rps; });
     this.__defineSetter__('rps', function(val) {
         rps = (val >= 0) ? val : Infinity;
+
         this.timeout_ = Math.floor(1/rps * 1000);
         if (this.restart_ && this.timeout_ < Infinity) {
             var oldRestart = this.restart_;
@@ -928,30 +929,31 @@ Loop.prototype.loop_ = function() {
             console.log("");
             console.log("");
 
-            console.log("in _loop");
+            console.log("in _loop - id: " + this.id);
 
             if (self.timeout_ === Infinity) {
                 self.restart_ = callfun;
                 return;
             }
-            console.log("in _loop: past infinity");
+            console.log("in _loop: self.timeout_ - " + self.timeout_);
 
             result = null; active = true; lagging = (self.timeout_ <= 0);
             if (!lagging) {
                 console.log("in _loop: in !lagging");
                 setTimeout(function() {
                     lagging = active;
+                    console.log("in loop_: in setTimeout - will call loop: " + lagging);
                     if (!lagging) { self.loop_(); }
                 }, self.timeout_);
             }
             self.emit('startiteration', self.args);
             var start = new Date();
 //            console.log("loop_ ");
-//            console.log("timeout: " + self.timeout_.toString());
-            console.log(self.fun.toString());
+            console.log("timeout: " + self.timeout_.toString());
+//            console.log(self.fun.toString());
             console.log("in loop_: Calling generator function ");
             self.fun(function(res) {
-                console.log("in loop_: in self.fun ");
+                console.log("in loop_: in self.fun - will call loop: " + lagging);
 
                 active = false;
                     result = res;
@@ -2504,7 +2506,11 @@ function requestGeneratorLoop(generator) {
                 callFinished(response);
             });
             console.log("in generator: request.end " );
+
             request.end();
+
+
+
         } else {
             console.log("in generator: else request");
             finished(null);
