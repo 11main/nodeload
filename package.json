@@ -25,10 +25,10 @@
     "type": "git",
     "url": "http://github.com/11main/nodeload"
   },
-  "main": "./nodeload.js",
+  "main": "nodeload.js",
   "bin": {
-    "nodeload.js": "./nodeload.js",
-    "nl.js": "./nl.js"
+    "nodeload.js": "nodeload.js",
+    "nl.js": "nl.js"
   },
   "directories": {
     "doc": "./doc",

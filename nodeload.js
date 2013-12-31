@@ -849,7 +849,9 @@ and 'enditeration'.
 @param rps          max number of times per second this loop should execute */
 var Loop = exports.Loop = function Loop(funOrSpec, args, conditions, rps) {
     EventEmitter.call(this);
-    
+
+//    console.log("create loop ");
+
     if (typeof funOrSpec === 'object') {
         var spec = util.defaults(funOrSpec, LOOP_OPTIONS);
 
@@ -857,11 +859,15 @@ var Loop = exports.Loop = function Loop(funOrSpec, args, conditions, rps) {
         args = spec.argGenerator ? spec.argGenerator() : spec.args;
         conditions = [];
         rps = spec.rps;
+//        console.log("create loop - rps: " + spec.rps.toString());
+
 
         if (spec.numberOfTimes > 0 && spec.numberOfTimes < Infinity) {
+//            console.log("create loop - numberOfTimes: " + spec.numberOfTimes.toString());
             conditions.push(Loop.maxExecutions(spec.numberOfTimes));
         }
         if (spec.duration > 0 && spec.duration < Infinity) {
+//            console.log("create loop - duration: " + spec.duration.toString());
             conditions.push(Loop.timeLimit(spec.duration));
         }
     }
@@ -895,7 +901,6 @@ Loop.prototype.start = function() {
             self.emit('start');
             self.loop_();
         };
-
     if (self.running) { return; }
     self.running = true;
     process.nextTick(startLoop);
@@ -917,22 +922,38 @@ Loop.prototype.loop_ = function() {
     
     var self = this, result, active, lagging,
         callfun = function() {
-            if (self.timeout_ === Infinity) { 
+            console.log("");
+            console.log("");
+            console.log("--------------------");
+            console.log("");
+            console.log("");
+
+            console.log("in _loop");
+
+            if (self.timeout_ === Infinity) {
                 self.restart_ = callfun;
                 return;
             }
+            console.log("in _loop: past infinity");
 
             result = null; active = true; lagging = (self.timeout_ <= 0);
             if (!lagging) {
-                setTimeout(function() { 
+                console.log("in _loop: in !lagging");
+                setTimeout(function() {
                     lagging = active;
                     if (!lagging) { self.loop_(); }
                 }, self.timeout_);
             }
             self.emit('startiteration', self.args);
             var start = new Date();
-            self.fun(function(res) { 
-                    active = false;
+//            console.log("loop_ ");
+//            console.log("timeout: " + self.timeout_.toString());
+            console.log(self.fun.toString());
+            console.log("in loop_: Calling generator function ");
+            self.fun(function(res) {
+                console.log("in loop_: in self.fun ");
+
+                active = false;
                     result = res;
                     self.emit('enditeration', result);
                     if (lagging) { self.loop_(); }
@@ -1023,6 +1044,7 @@ util.inherits(MultiLoop, EventEmitter);
 
 /** Start all scheduled Loops. When the loops complete, 'end' event is emitted. */
 MultiLoop.prototype.start = function() {
+//    console.log("Starting multi loop")
     if (this.running) { return; }
     this.running = true;
     this.startTime = new Date();
@@ -1030,8 +1052,6 @@ MultiLoop.prototype.start = function() {
     this.concurrency = 0;
     this.loops = [];
     this.loopConditions_ = [];
-
-    console.log("this.spec.numberOfTimes: " + this.spec.numberOfTimes.toString());
 
     if (this.spec.numberOfTimes > 0 && this.spec.numberOfTimes < Infinity) {
         this.loopConditions_.push(Loop.maxExecutions(this.spec.numberOfTimes));
@@ -1103,7 +1123,9 @@ MultiLoop.prototype.update_ = function() {
         timeout = Math.min(
           this.getProfileTimeToNextValue_(this.concurrencyProfile, now), 
           this.getProfileTimeToNextValue_(this.rpsProfile, now)) * 1000;
-    
+
+//    console.log("Multiloop update_ : concurrency: " + concurrency);
+
     if (concurrency < this.concurrency) {
         var removed = this.loops.splice(concurrency);
         removed.forEach(function(l) { l.stop(); });
@@ -1111,6 +1133,7 @@ MultiLoop.prototype.update_ = function() {
     } else if (concurrency > this.concurrency) {
         var loops = [];
         for (i = 0; i < concurrency-this.concurrency; i++) {
+//            console.log("Multiloop.update_ : Starting loop here")
             var args = this.spec.argGenerator ? this.spec.argGenerator() : this.spec.args,
                 loop = new Loop(this.spec.fun, args, this.loopConditions_, 0).start();
             loop.on('end', this.finishedChecker_);
@@ -1119,15 +1142,22 @@ MultiLoop.prototype.update_ = function() {
         this.loops = this.loops.concat(loops);
         this.emit('add', loops);
     }
-    
+
+//    console.log("Multiloop update_ : rps: " + rps);
+
     if (concurrency !== this.concurrency || rps !== this.rps) {
         var rpsPerLoop = (rps / concurrency);
+//        console.log("Multiloop update_ : rpsPerLoop: " + rpsPerLoop);
+
         this.loops.forEach(function(l) { l.rps = rpsPerLoop; });
         this.emit('rps', rps);
     }
     
     this.concurrency = concurrency;
     this.rps = rps;
+
+//    console.log("Multiloop update_ : timeout: " + timeout);
+
 
     if (timeout < Infinity) {
         this.updateTimeoutId = setTimeout(this.updater_, timeout);
@@ -2201,6 +2231,7 @@ var TEST_OPTIONS = {
                                             //        [[time (seconds), rps], [time 2, rps], ...]
                                             //      For example, ramp up from 100 to 500 rps and then
                                             //      down to 0 over 20 seconds:
+
                                             //        [[0, 100], [10, 500], [20, 0]]
                                             
                                             // Specify one of:
@@ -2239,7 +2270,6 @@ TEST_OPTIONS for a list of the configuration values in each specification.
         in .interval and .stats. See LoadTest below.
 */
 var run = exports.run = function(specs) {
-    console.log("Running NodeLoad -");
     specs = (specs instanceof Array) ? specs : util.argarray(arguments);
     var tests = specs.map(function(spec) {
         spec = util.defaults(spec, TEST_OPTIONS);
@@ -2247,7 +2277,6 @@ var run = exports.run = function(specs) {
                 if (spec.requestGenerator) { return spec.requestGenerator(client); }
                 var request = client.request(spec.method, spec.path, { 'host': spec.host });
                 if (spec.requestData) {
-                    console.log("Issuing request ");
                     request.write(spec.requestData);
                 }
                 return request;
@@ -2316,7 +2345,6 @@ var LoadTest = exports.LoadTest = function LoadTest(tests) {
     self.interval = {};
     self.stats = {};
     self.tests.forEach(function(test) {
-        console.log("Setting intervals ");
         self.interval[test.spec.name] = test.monitor.interval;
         self.stats[test.spec.name] = test.monitor.stats;
     });
@@ -2448,8 +2476,14 @@ function generateConnection(host, port, detectClientErrors) {
 function requestGeneratorLoop(generator) {
     return function(finished, client) {
         var running = true, timeoutId, request = generator(client);
+
+        console.log("in generator: ");
+
         var callFinished = function(response) {
-            if (running) { 
+            console.log("in generator - call finished");
+
+            if (running) {
+                console.log("in generator - call finished - running");
                 running = false;
                 clearTimeout(timeoutId);
                 response.statusCode = response.statusCode || 0;
@@ -2457,16 +2491,22 @@ function requestGeneratorLoop(generator) {
             }
         };
         if (request) {
+            console.log("in generator: in request");
+
             if (request.timeout > 0) {
+                console.log("in generator: request.timeout > 0 : " + request.timeout.toString());
                 timeoutId = setTimeout(function() {
                                 callFinished(new EventEmitter());
                             }, request.timeout);
             }
+            console.log("in generator: adding response event : " );
             request.on('response', function(response) {
                 callFinished(response);
             });
+            console.log("in generator: request.end " );
             request.end();
         } else {
+            console.log("in generator: else request");
             finished(null);
         }
     };
