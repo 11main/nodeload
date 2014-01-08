@@ -847,10 +847,8 @@ and 'enditeration'.
                     function returns false, the loop terminates. Loop#timeLimit and Loop#maxExecutions 
                     are conditions that can be used here. 
 @param rps          max number of times per second this loop should execute */
-var Loop = exports.Loop = function Loop(funOrSpec, args, conditions, rps) {
+var Loop = exports.Loop = function Loop(funOrSpec, args, conditions, rps, requestArgs) {
     EventEmitter.call(this);
-
-//    console.log("create loop ");
 
     if (typeof funOrSpec === 'object') {
         var spec = util.defaults(funOrSpec, LOOP_OPTIONS);
@@ -859,6 +857,7 @@ var Loop = exports.Loop = function Loop(funOrSpec, args, conditions, rps) {
         args = spec.argGenerator ? spec.argGenerator() : spec.args;
         conditions = [];
         rps = spec.rps;
+        requestArgs = spec.requestArgs;
 //        console.log("create loop - rps: " + spec.rps.toString());
 
 
@@ -890,6 +889,7 @@ var Loop = exports.Loop = function Loop(funOrSpec, args, conditions, rps) {
     this.conditions = conditions || [];
     this.running = false;
     this.rps = rps;
+    this.requestArgs = requestArgs;
 };
 
 util.inherits(Loop, EventEmitter);
@@ -952,6 +952,7 @@ Loop.prototype.loop_ = function() {
 //            console.log("timeout: " + self.timeout_.toString());
 //            console.log(self.fun.toString());
 //            console.log("in loop_: Calling generator function ");
+
             self.fun(function(res) {
 //                console.log("in loop_: in self.fun - will call loop: " + lagging);
 
@@ -959,7 +960,7 @@ Loop.prototype.loop_ = function() {
                     result = res;
                     self.emit('enditeration', result);
                     if (lagging) { self.loop_(); }
-                }, self.args);
+                }, self.requestArgs);
         };
 
     if (self.checkConditions_()) {
@@ -1035,6 +1036,7 @@ var MultiLoop = exports.MultiLoop = function MultiLoop(spec) {
     EventEmitter.call(this);
 
     this.spec = util.extend({}, util.defaults(spec, LOOP_OPTIONS));
+    this.requestArgs = spec.requestArgs;
     this.loops = [];
     this.concurrencyProfile = spec.concurrencyProfile || [[0, spec.concurrency]];
     this.rpsProfile = spec.rpsProfile || [[0, spec.rps]];
@@ -1137,7 +1139,7 @@ MultiLoop.prototype.update_ = function() {
         for (i = 0; i < concurrency-this.concurrency; i++) {
 //            console.log("Multiloop.update_ : Starting loop here")
             var args = this.spec.argGenerator ? this.spec.argGenerator() : this.spec.args,
-                loop = new Loop(this.spec.fun, args, this.loopConditions_, 0).start();
+                loop = new Loop(this.spec.fun, args, this.loopConditions_, 0, this.spec.requestArgs).start();
             loop.on('end', this.finishedChecker_);
             loops.push(loop);
         }
@@ -2249,7 +2251,7 @@ var TEST_OPTIONS = {
     delay: 0,                               // Seconds before starting test
 
     stats: ['latency',                      // Specify list of: 'latency', 'result-codes', 'uniques', 
-            'result-codes']                 // 'concurrency', 'http-errors'. These following statistics
+            'result-codes'],                // 'concurrency', 'http-errors'. These following statistics
                                             // may also be specified with parameters:
                                             //
                                             //     { name: 'latency', percentiles: [0.9, 0.99] }
@@ -2261,6 +2263,10 @@ var TEST_OPTIONS = {
                                             // Note:
                                             // - for 'uniques', traceableRequest() must be used
                                             //   to create the ClientRequest or only 2 will be detected.
+    requestArgs: undefined                  // Any data to pass in the request generator. Currently it is a
+                                            //   list which is a population of requests to pass in to loop
+                                            //   overriding the request paths so varied, but non-randomized
+                                            //   paths can be requested
 };
 
 var LoadTest, generateConnection, requestGeneratorLoop;
@@ -2308,7 +2314,8 @@ var run = exports.run = function(specs) {
                 rpsProfile: spec.loadProfile || [[0, spec.targetRps]],
                 duration: spec.timeLimit,
                 numberOfTimes: spec.numRequests,
-                delay: spec.delay
+                delay: spec.delay,
+                requestArgs: spec.requestArgs
             }),
             monitor = new Monitor(spec.stats),
             report = new Report(spec.name).updateFromMonitor(monitor);
@@ -2494,8 +2501,8 @@ function generateConnection(host, port, detectClientErrors) {
         request by calling generator. loopFun({req: http.ClientRequest, res: http.ClientResponse}) is
         called when the HTTP response is received or the request times out. */
 function requestGeneratorLoop(generator) {
-    return function(finished, client) {
-        var running = true, timeoutId, request = generator(client);
+    return function(finished, requestData) {
+        var running = true, timeoutId, request = generator(requestData);
 
 //        console.log("in generator: ");
 
