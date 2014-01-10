@@ -1378,7 +1378,7 @@ var LogFile = require('../stats').LogFile;
 
 /** StatsLogger writes interval stats from a Monitor or MonitorGroup to disk each time it emits 'update' */
 var StatsLogger = exports.StatsLogger = function StatsLogger(monitor, logNameOrObject) {
-    this.logNameOrObject = logNameOrObject || ('results-' + START.toISOString().replace(/:/g,"-") + '-stats.log');
+    this.logNameOrObject = logNameOrObject || ('results/results-' + START.toISOString().replace(/:/g,"-") + '-stats.log');
     this.monitor = monitor;
     this.logger_ = this.log_.bind(this);
 };
@@ -1993,7 +1993,8 @@ Chart.prototype = {
 
 var ReportGroup = exports.ReportGroup = function() {
     this.reports = [];
-    this.logNameOrObject = 'results-' + START.toISOString().replace(/:/g,"-") + '.html';
+
+    this.logNameOrObject = 'results/results-' + START.toISOString().replace(/:/g,"-") + '.html';
 };
 ReportGroup.prototype = {
     addReport: function(report) {
@@ -2191,6 +2192,7 @@ var MultiLoop = require('./loop').MultiLoop;
 var Monitor = require('./monitoring').Monitor;
 var Report = reporting.Report;
 var LogFile = stats.LogFile;
+var fs = require("fs");
 
 var NODELOAD_CONFIG = require('./config').NODELOAD_CONFIG;
 var START = NODELOAD_CONFIG.START;
@@ -2323,7 +2325,18 @@ var run = exports.run = function(specs) {
         loop.on('add', function(loops) { 
             monitor.monitorObjects(loops, 'startiteration', 'enditeration');
         });
-        REPORT_MANAGER.addReport(report);
+
+        // Create a folder to contain results files to avoid polluting main folder.
+        try{
+            var errCode = fs.mkdirSync('results');
+        }
+        catch (ex) {
+            if (ex.message.substring(0, ex.message.length) !== "EEXIST"){
+                console.log(ex.message)
+            }
+        }
+
+            REPORT_MANAGER.addReport(report);
         monitor.name = spec.name;
         monitor.setLoggingEnabled(NODELOAD_CONFIG.LOGS_ENABLED);
         
