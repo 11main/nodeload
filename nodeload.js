@@ -2282,6 +2282,16 @@ TEST_OPTIONS for a list of the configuration values in each specification.
 var run = exports.run = function(specs) {
     specs = (specs instanceof Array) ? specs : util.argarray(arguments);
 
+    // Create a folder to contain results files to avoid polluting main folder.
+    try{
+        var errCode = fs.mkdirSync('results');
+    }
+    catch (ex) {
+        var comp = "EEXIST";
+        if (ex.message.substring(0, comp.length) !== comp){
+            console.log(ex.message)
+        }
+    }
         var tests = specs.map(function(spec) {
         spec = util.defaults(spec, TEST_OPTIONS);
 
@@ -2326,15 +2336,7 @@ var run = exports.run = function(specs) {
             monitor.monitorObjects(loops, 'startiteration', 'enditeration');
         });
 
-        // Create a folder to contain results files to avoid polluting main folder.
-        try{
-            var errCode = fs.mkdirSync('results');
-        }
-        catch (ex) {
-            if (ex.message.substring(0, ex.message.length) !== "EEXIST"){
-                console.log(ex.message)
-            }
-        }
+
 
             REPORT_MANAGER.addReport(report);
         monitor.name = spec.name;
