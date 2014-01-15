@@ -1297,7 +1297,7 @@ StatsCollectors['http-errors'] = function HttpErrorsCollector(params) {
     var self = this;
     self.stats = new Accumulator();
     self.successCodes = params.successCodes || [200];
-    self.logfile = (typeof params.log === 'string') ? new LogFile(params.log) : params.log;
+    self.logfile = (typeof params.log === 'string') ? new LogFile("results/" + params.log) : params.log;
     self.logResBody = ( params.hasOwnProperty('logResBody') ) ? params.logResBody : true;
     self.end = function(context, http) {
         if (self.successCodes.indexOf(http.res.statusCode) < 0) {
@@ -1378,6 +1378,7 @@ var LogFile = require('../stats').LogFile;
 
 /** StatsLogger writes interval stats from a Monitor or MonitorGroup to disk each time it emits 'update' */
 var StatsLogger = exports.StatsLogger = function StatsLogger(monitor, logNameOrObject) {
+//    this.logNameOrObject = logNameOrObject || ('results-' + START.toISOString().replace(/:/g,"-") + '-stats.log');
     this.logNameOrObject = logNameOrObject || ('results/results-' + START.toISOString().replace(/:/g,"-") + '-stats.log');
     this.monitor = monitor;
     this.logger_ = this.log_.bind(this);
@@ -1995,6 +1996,7 @@ var ReportGroup = exports.ReportGroup = function() {
     this.reports = [];
 
     this.logNameOrObject = 'results/results-' + START.toISOString().replace(/:/g,"-") + '.html';
+//    this.logNameOrObject = 'results-' + START.toISOString().replace(/:/g,"-") + '.html';
 };
 ReportGroup.prototype = {
     addReport: function(report) {
@@ -2282,16 +2284,7 @@ TEST_OPTIONS for a list of the configuration values in each specification.
 var run = exports.run = function(specs) {
     specs = (specs instanceof Array) ? specs : util.argarray(arguments);
 
-    // Create a folder to contain results files to avoid polluting main folder.
-    try{
-        var errCode = fs.mkdirSync('results');
-    }
-    catch (ex) {
-        var comp = "EEXIST";
-        if (ex.message.substring(0, comp.length) !== comp){
-            console.log(ex.message)
-        }
-    }
+
         var tests = specs.map(function(spec) {
         spec = util.defaults(spec, TEST_OPTIONS);
 
@@ -2773,6 +2766,7 @@ EndpointClient.prototype.defineMethod = function(name) {
             if (res.statusCode !== 200) {
                 self.emit('clientError', res);
             }
+            var resData = res.read();
         });
         req.end(JSON.stringify(params));
 
@@ -2850,8 +2844,10 @@ Slave.prototype.start = function() {
         self.client.basepath = url.parse(res.headers['location']).pathname;
         self.state = 'started';
         self.emit('start');
+
+        var result = res.read();
     });
-    
+
     self.state = 'connecting';
 };
 /** Stop this slave by sending a DELETE request to terminate the slave's endpoint. */
@@ -2873,6 +2869,8 @@ Slave.prototype.end = function() {
         if (res.statusCode !== 204) {
             self.emit('slaveError', new Error('Error stopping slave.'), res);
         }
+        var result = res.read();
+
         done();
     });
     req.end();
