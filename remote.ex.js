@@ -44,7 +44,7 @@ if (process.argv.length < 3) {
 
     slave2 = new HttpServer().start(8002);
     remote.installRemoteHandler(slave2);
-    remoteHost2 = 'localhost:8001';
+    remoteHost2 = 'localhost:8002';
 
 } else {
     remoteHost = process.argv[2];
@@ -65,6 +65,7 @@ var cluster = new Cluster({
     master: {
         sendOutput: function(slaves, slaveId, output) {
             console.log("In send output");
+            console.log("Slave Id: " + slaveId);
             util.print(output);
 
             // grab fields 4-6 from the iostat output, which assumes output looks like:
@@ -84,7 +85,9 @@ var cluster = new Cluster({
                 console.log('     system: ' + parts[7]);
                 console.log('     idle: ' + parts[8]);
 
-                cpuChart.put({
+                var chart = slaveId === 'localhost:8001' ? cpuChart : cpuChart2;
+
+                chart.put({
                     user: parseFloat(parts[6]),
                     system: parseFloat(parts[7]),
                     idle: parseFloat(parts[8])
