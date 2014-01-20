@@ -78,7 +78,8 @@ module.exports = function(grunt) {
 
 	var file = require('fs').readFileSync(src).toString();
 	// var output = 'var ' + varname + '= exports.' + varname + '=' + JSON.stringify(file).replace('\\r\\n','\\n') + ';' + '\n';
-	var output = 'var ' + varname + '= exports.' + varname + '=' + JSON.stringify(file).replaceAll('\\r\\n','\\n', true) + ';' + '\n';
+	var output = 'var ' + varname + '= exports.' + varname + '='
+                        + JSON.stringify(file).replaceAll('\\r\\n','\\n', true) + ';' + '\n';
 	require('fs').writeFileSync(src + '.js', output);
 
 });
